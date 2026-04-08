@@ -29,9 +29,9 @@ from forensic_hawkeye_env.client import ForensicHawkeyeEnv
 from forensic_hawkeye_env.models import ForensicHawkeyeAction
 
 # ── Configuration ─────────────────────────────────────────
-API_BASE_URL = os.getenv("API_BASE_URL")
-MODEL_NAME = os.getenv("MODEL_NAME")
-API_KEY = os.getenv("HF_TOKEN")
+API_BASE_URL = os.getenv("API_BASE_URL") or os.getenv("OPENAI_API_BASE")
+MODEL_NAME = os.getenv("MODEL_NAME") or os.getenv("OPENAI_MODEL_NAME") or "gpt-4-turbo"
+API_KEY = os.getenv("HF_TOKEN") or os.getenv("OPENAI_API_KEY")
 ENV_URL = os.getenv("ENV_URL", "http://localhost:8000")
 BENCHMARK = "forensic_hawkeye_env"
 MAX_STEPS = 15
@@ -147,11 +147,16 @@ def get_model_action(client: OpenAI, messages: list, obs) -> str:
 
 # ── Main task runner ──────────────────────────────────────
 def run_task(task_id: int) -> None:
-    if not all([API_BASE_URL, API_KEY, MODEL_NAME]):
-        print("Missing required environment variables (API_BASE_URL, HF_TOKEN, MODEL_NAME)", flush=True)
-        return
+    if not API_KEY:
+        print("[DEBUG] Warning: OPENAI_API_KEY / HF_TOKEN is not set in the environment.", flush=True)
 
-    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+    client_kwargs = {}
+    if API_KEY:
+        client_kwargs["api_key"] = API_KEY
+    if API_BASE_URL:
+        client_kwargs["base_url"] = API_BASE_URL
+
+    client = OpenAI(**client_kwargs)
     rewards: List[float] = []
     steps_taken = 0
     score = 0.0

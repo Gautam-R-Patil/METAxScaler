@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "c:\Users\HP\Downloads\crashenv\forensic_hawkeye_env\inference.py", line 149, in <module>
+    run_task(task_id=i)
+  File "c:\Users\HP\Downloads\crashenv\forensic_hawkeye_env\inference.py", line 65, in run_task
+    with ForensicHawkeyeEnv(base_url=env_url) as env:
+  File "C:\Users\HP\AppData\Local\Programs\Python\Python310\lib\site-packages\openenv\core\env_client.py", line 448, in __enter__
+    raise TypeError(
+TypeError: EnvClient is async by default. Use 'async with' instead of 'with', or call .sync() to get a synchronous wrapper:
+  async with client:  # async usage
+  with client.sync():  # sync wrapper

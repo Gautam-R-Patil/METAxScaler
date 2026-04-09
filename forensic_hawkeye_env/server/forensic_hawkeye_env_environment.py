@@ -191,34 +191,43 @@ class ForensicHawkeyeEnvironment(Environment):
         Returns:
             Updated observation with simulation results or verdict response.
         """
-        self._state.step_count += 1
-        scenario = self._scenario
+        try:
+            self._state.step_count += 1
+            scenario = self._scenario
 
-        if scenario is None:
-            return self._error_obs("Environment not reset. Call reset() first.")
+            if scenario is None:
+                return self._error_obs("Environment not reset. Call reset() first.")
 
-        # Check max steps
-        if self._state.step_count > scenario.max_steps:
-            final_score = compute_final_score(
-                self._best_total_error,
-                scenario.error_threshold,
-                False,
-                self._state.simulation_count,
-            )
+            # Check max steps
+            if self._state.step_count > scenario.max_steps:
+                final_score = compute_final_score(
+                    self._best_total_error,
+                    scenario.error_threshold,
+                    False,
+                    self._state.simulation_count,
+                )
+                return self._done_obs(
+                    reward=0.0,
+                    score=final_score,
+                    message="Maximum steps exceeded. Episode ended.",
+                )
+
+            if action.action_type == "RUN_SIMULATION":
+                return self._handle_simulation(action)
+            elif action.action_type == "SUBMIT_VERDICT":
+                return self._handle_verdict(action)
+            else:
+                return self._error_obs(
+                    f"Unknown action_type: {action.action_type}. "
+                    f"Use 'RUN_SIMULATION' or 'SUBMIT_VERDICT'."
+                )
+        except Exception as e:
+            # Absolute fallback to ensure we NEVER crash the container and ALWAYS return a valid score (between 0 and 1)
+            # if the evaluator tries an invalid action payload or syntax.
             return self._done_obs(
-                reward=-0.1,
-                score=final_score,
-                message="Maximum steps exceeded. Episode ended.",
-            )
-
-        if action.action_type == "RUN_SIMULATION":
-            return self._handle_simulation(action)
-        elif action.action_type == "SUBMIT_VERDICT":
-            return self._handle_verdict(action)
-        else:
-            return self._error_obs(
-                f"Unknown action_type: {action.action_type}. "
-                f"Use 'RUN_SIMULATION' or 'SUBMIT_VERDICT'."
+                reward=0.0,
+                score=0.001,
+                message=f"Internal scenario implementation error: {str(e)}"
             )
 
     def _handle_simulation(
@@ -380,7 +389,8 @@ class ForensicHawkeyeEnvironment(Environment):
 
         return ForensicHawkeyeObservation(
             done=False,
-            reward=reward,
+            # Hackathon: Intermediate steps MUST return 0.0 so episode sum is exactly final_score
+            reward=0.0,
             task_id=self._task_id,
             task_name=scenario.task_name,
             target_debris=target_as_lists,
@@ -434,7 +444,7 @@ class ForensicHawkeyeEnvironment(Environment):
         """Build an error observation."""
         return ForensicHawkeyeObservation(
             done=False,
-            reward=-0.1,
+            reward=0.0,
             task_id=self._task_id,
             task_name="",
             target_debris={},

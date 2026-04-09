@@ -31,10 +31,28 @@ class ForensicHawkeyeAction(Action):
         ..., description="Type of action to perform"
     )
 
+    thought: Optional[str] = Field(
+        default=None, description="Model's internal reasoning or thought process."
+    )
+
     # Used for RUN_SIMULATION
     sim_parameters: Optional[Dict[str, Dict[str, float]]] = Field(
         default=None,
         description='Physics parameters per entity, e.g. {"Car_A": {"speed": 45.0, "steering": 0.0}}',
+    )
+
+    # The 'Four Pillars' explicit parameters for RUN_SIMULATION
+    friction_coefficient: Optional[float] = Field(
+        default=None, description="Global friction coefficient (e.g. 0.3-0.9) deduced from weather"
+    )
+    restitution: Optional[float] = Field(
+        default=None, description="Global elasticity (e.g. 0.1-0.8) deduced from damage"
+    )
+    mass_overrides: Optional[Dict[str, float]] = Field(
+        default=None, description="Custom mass per entity in kg, e.g. {'Car_A': 8000.0}"
+    )
+    impact_offset_y: Optional[float] = Field(
+        default=None, description="Y-axis collision offset for angular momentum/spin"
     )
 
     # Used for SUBMIT_VERDICT
@@ -89,6 +107,15 @@ class ForensicHawkeyeObservation(Observation):
 
     human_testimony: str = Field(
         default="", description="The witness testimony to evaluate"
+    )
+    weather_conditions: str = Field(
+        default="", description="Extracted weather clues from testimony (for friction)"
+    )
+    vehicle_descriptions: Dict[str, str] = Field(
+        default_factory=dict, description="Extracted vehicle types (for mass)"
+    )
+    damage_description: str = Field(
+        default="", description="Extracted damage clues (for restitution)"
     )
     active_contradiction_flag: bool = Field(
         default=False,

@@ -61,6 +61,24 @@ class BaseScenario(ABC):
 
     @property
     @abstractmethod
+    def ground_truth_friction(self) -> float:
+        """Ground truth friction coefficient"""
+        ...
+
+    @property
+    @abstractmethod
+    def ground_truth_restitution(self) -> float:
+        """Ground truth restitution coefficient"""
+        ...
+
+    @property
+    @abstractmethod
+    def ground_truth_masses(self) -> Dict[str, float]:
+        """Ground truth masses per entity"""
+        ...
+
+    @property
+    @abstractmethod
     def error_threshold(self) -> float:
         """Maximum acceptable total distance error for a valid reconstruction."""
         ...

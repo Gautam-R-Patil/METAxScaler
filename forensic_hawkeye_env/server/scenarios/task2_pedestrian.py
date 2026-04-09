@@ -30,8 +30,8 @@ class PedestrianParadoxScenario(BaseScenario):
     """
 
     _TARGET_DEBRIS = {
-        "Car_A": (139.21, 40.65),
-        "Pedestrian": (65.0, 69.69),
+        "Car_A": (130.8, 63.79),
+        "Pedestrian": (65.0, 74.73),
     }
 
     @property
@@ -44,18 +44,17 @@ class PedestrianParadoxScenario(BaseScenario):
 
     @property
     def max_steps(self) -> int:
-        return 20
+        return 25
 
     @property
     def testimony(self) -> str:
         return (
-            "Driver of Car A states: 'I was driving at about 35 mph when a pedestrian "
-            "suddenly sprinted into the road from my right side. I had no choice but to "
-            "swerve hard to the left to avoid hitting them. Unfortunately I hit a utility "
-            "pole instead. The pedestrian was running very fast — I barely saw them in time.'\n\n"
-            "Pedestrian states: 'I was walking slowly across the crosswalk, at normal "
-            "walking pace. The car came out of nowhere going very fast. I was never in "
-            "the car's path — it swerved toward the pole for no reason. The driver was "
+            "Driver of Car A states: 'I was driving my mid-size coupe at about 35 mph. "
+            "It was a bright, sunny day with bone-dry roads. A pedestrian "
+            "suddenly sprinted into the road from my right side. I swerved hard to the left "
+            "and hit a utility pole. The pole barely scratched my bumper, just a minor dent.'\n\n"
+            "Pedestrian states: 'I was walking slowly across the crosswalk. "
+            "The car came out of nowhere going very fast. The driver was "
             "definitely speeding.'"
         )
 
@@ -70,6 +69,18 @@ class PedestrianParadoxScenario(BaseScenario):
     @property
     def ground_truth_cause(self) -> str:
         return "Overreaction"
+
+    @property
+    def ground_truth_friction(self) -> float:
+        return 0.8  # Dry day
+
+    @property
+    def ground_truth_restitution(self) -> float:
+        return 0.5  # Minor dent
+
+    @property
+    def ground_truth_masses(self) -> Dict[str, float]:
+        return {"Car_A": 1400.0, "Pedestrian": 75.0}
 
     @property
     def error_threshold(self) -> float:

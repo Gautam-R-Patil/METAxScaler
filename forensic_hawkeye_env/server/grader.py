@@ -62,6 +62,7 @@ def compute_final_score(
     error_threshold: float,
     verdict_correct: bool,
     simulation_count: int,
+    physics_bonus: float = 0.0,
 ) -> float:
     """
     Compute the final grader score (0.0–1.0) for hackathon evaluation.
@@ -99,4 +100,4 @@ def compute_final_score(
         # Likely guessed — slight penalty
         accuracy_score *= 0.8
 
-    return round(min(accuracy_score + verdict_score, 1.0), 3)
+    return round(min(accuracy_score + verdict_score + physics_bonus, 1.0), 3)

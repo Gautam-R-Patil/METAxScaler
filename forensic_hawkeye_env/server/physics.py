@@ -108,6 +108,7 @@ class PhysicsWorld:
         self,
         physics_config: ScenarioPhysicsConfig,
         sim_params: Dict[str, Dict[str, float]],
+        action=None,
     ) -> SimulationResult:
         """
         Run a full physics simulation with given parameters.
@@ -116,6 +117,8 @@ class PhysicsWorld:
             physics_config: Scenario layout (entities, obstacles, bounds)
             sim_params: Agent-provided parameters per entity
                         e.g. {"Car_A": {"speed": 54.0, "steering": -5.0}}
+            action: Optional ForensicHawkeyeAction containing global physics parameters.
+
 
         Returns:
             SimulationResult with final positions of all dynamic entities
@@ -123,6 +126,22 @@ class PhysicsWorld:
         space = pymunk.Space()
         space.gravity = GRAVITY
         space.damping = 0.95  # 1.0 = no damping, lower = more friction
+
+        # Four Pillars: Global parameters
+        global_friction = DEFAULT_FRICTION
+        global_elasticity = DEFAULT_ELASTICITY
+        mass_overrides = {}
+        y_offset = 0.0
+
+        if action:
+            if getattr(action, "friction_coefficient", None) is not None:
+                global_friction = action.friction_coefficient
+            if getattr(action, "restitution", None) is not None:
+                global_elasticity = action.restitution
+            if getattr(action, "mass_overrides", None) is not None:
+                mass_overrides = action.mass_overrides
+            if getattr(action, "impact_offset_y", None) is not None:
+                y_offset = action.impact_offset_y
 
         bodies: Dict[str, pymunk.Body] = {}
         was_collision = False
@@ -145,7 +164,7 @@ class PhysicsWorld:
         ]
         for w in walls:
             w.elasticity = 0.2
-            w.friction = DEFAULT_FRICTION
+            w.friction = global_friction
         space.add(*walls)
 
         # ── Add static obstacles ──
@@ -157,8 +176,8 @@ class PhysicsWorld:
                 obs_body,
                 [(-hw, -hh), (hw, -hh), (hw, hh), (-hw, hh)],
             )
-            obs_shape.elasticity = DEFAULT_ELASTICITY
-            obs_shape.friction = DEFAULT_FRICTION
+            obs_shape.elasticity = global_elasticity
+            obs_shape.friction = global_friction
             space.add(obs_body, obs_shape)
 
         # ── Add dynamic entities ──
@@ -188,13 +207,18 @@ class PhysicsWorld:
             vy = speed_ms * math.sin(heading_rad)
 
             # Create body
+            actual_mass = mass_overrides.get(entity_cfg.name, entity_cfg.mass)
             moment = pymunk.moment_for_box(
-                entity_cfg.mass, (entity_cfg.width, entity_cfg.height)
+                actual_mass, (entity_cfg.width, entity_cfg.height)
             )
-            body = pymunk.Body(entity_cfg.mass, moment)
+            body = pymunk.Body(actual_mass, moment)
+            
+            # Apply Angular momentum offset if entity is car (mostly testing collisions)
+            start_y_offset = y_offset if entity_cfg.entity_type == "car" else 0.0
+            
             body.position = (
                 entity_cfg.start_x + timing_offset * vx * 0.5,
-                entity_cfg.start_y + timing_offset * vy * 0.5,
+                entity_cfg.start_y + start_y_offset + timing_offset * vy * 0.5,
             )
             body.velocity = (vx, vy)
 
@@ -207,13 +231,17 @@ class PhysicsWorld:
                     body, [(-hw, -hh), (hw, -hh), (hw, hh), (-hw, hh)]
                 )
 
-            # Apply 2.5D dynamic friction
             decel = speed_ms * 0.3  # Approximate deceleration from friction
             mu = self._compute_dynamic_friction(
-                speed_ms, decel, entity_cfg.mass
+                speed_ms, decel, actual_mass
             )
+            # Adjust by global friction ratio if it changed
+            if global_friction != DEFAULT_FRICTION:
+                # Basic scaling
+                mu = mu * (global_friction / DEFAULT_FRICTION)
+                
             shape.friction = mu
-            shape.elasticity = DEFAULT_ELASTICITY
+            shape.elasticity = global_elasticity
 
             space.add(body, shape)
             bodies[entity_cfg.name] = body

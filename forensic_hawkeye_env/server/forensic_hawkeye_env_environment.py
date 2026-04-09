@@ -187,18 +187,17 @@ class ForensicHawkeyeEnvironment(Environment):
         """Run a physics simulation with the agent's parameters."""
         scenario = self._scenario
 
-        # Validate parameters
-        sim_params = action.sim_parameters
-        if not sim_params:
+        # Validate parameters - now allows either sim_parameters OR the global parameters
+        sim_params = action.sim_parameters or {}
+        if not sim_params and action.friction_coefficient is None and action.restitution is None and action.mass_overrides is None and action.impact_offset_y is None:
             return self._step_obs(
                 reward=-0.05,
-                message="No sim_parameters provided. You must provide parameters "
-                "for at least one entity.",
+                message="No parameters provided. You must provide physics parameters.",
             )
 
         # Run physics simulation
         physics_config = scenario.get_physics_config()
-        result = self._physics.simulate(physics_config, sim_params)
+        result = self._physics.simulate(physics_config, sim_params, action)
 
         # Compute distance errors
         target = scenario.target_debris
@@ -282,12 +281,31 @@ class ForensicHawkeyeEnvironment(Environment):
         )
         self._rewards.append(reward)
 
+        # Calculate physics bonus
+        physics_bonus = 0.0
+        if action.friction_coefficient is not None:
+            if abs(action.friction_coefficient - scenario.ground_truth_friction) < 0.1:
+                physics_bonus += 0.05
+        if action.restitution is not None:
+            if abs(action.restitution - scenario.ground_truth_restitution) < 0.1:
+                physics_bonus += 0.05
+        if action.mass_overrides:
+            mass_correct = True
+            for entity, truth_mass in scenario.ground_truth_masses.items():
+                guessed_mass = action.mass_overrides.get(entity)
+                if guessed_mass is None or abs(guessed_mass - truth_mass) > 100.0:
+                    mass_correct = False
+                    break
+            if mass_correct:
+                physics_bonus += 0.05
+
         # Final score
         final_score = compute_final_score(
             self._best_total_error,
             scenario.error_threshold,
             verdict_correct,
             self._state.simulation_count,
+            physics_bonus=physics_bonus,
         )
 
         # Message

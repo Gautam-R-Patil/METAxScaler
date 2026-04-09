@@ -27,9 +27,9 @@ class MomentumScenario(BaseScenario):
     """
 
     _TARGET_DEBRIS = {
-        "Car_A": (141.16, 100.0),
-        "Car_B": (106.45, 172.07),
-        "Car_C": (173.71, 100.0),
+        "Car_A": (120.93, 100.0),
+        "Car_B": (104.43, 178.98),
+        "Car_C": (137.64, 100.0),
     }
 
     @property
@@ -42,19 +42,19 @@ class MomentumScenario(BaseScenario):
 
     @property
     def max_steps(self) -> int:
-        return 30
+        return 35
 
     @property
     def testimony(self) -> str:
         return (
             "Driver of Car A states: 'I was going about 40 mph through the intersection "
-            "on a green light. Car B came from my left and Car C from straight ahead. "
-            "They both ran their red lights.'\n\n"
-            "Driver of Car B states: 'I was driving at about 35 mph. My light was green. "
-            "Car A came speeding through the red light from my right, and Car C was already "
-            "in the intersection illegally.'\n\n"
-            "Driver of Car C states: 'I was traveling about 30 mph. I had the right of way. "
-            "Both Car A and Car B ran their lights. Car B seemed to be going especially fast.'"
+            "in my standard sedan. It was freezing and the roads were completely covered in ice. "
+            "Car B, a massive delivery truck, T-boned us from the side, sending us spinning. "
+            "All the vehicles were completely crushed, totaled beyond repair.'\n\n"
+            "Driver of Car B states: 'I was driving my heavy delivery truck at about 35 mph. "
+            "My light was green. Car A came speeding through the red light from my right.'\n\n"
+            "Driver of Car C states: 'I was in my compact car traveling about 30 mph. "
+            "Both Car A and Car B ran their lights. That delivery truck was going insanely fast.'"
         )
 
     @property
@@ -68,6 +68,18 @@ class MomentumScenario(BaseScenario):
     @property
     def ground_truth_cause(self) -> str:
         return "Speeding"
+
+    @property
+    def ground_truth_friction(self) -> float:
+        return 0.15  # Icy roads
+
+    @property
+    def ground_truth_restitution(self) -> float:
+        return 0.2  # Completely crushed
+
+    @property
+    def ground_truth_masses(self) -> Dict[str, float]:
+        return {"Car_A": 1500.0, "Car_B": 8000.0, "Car_C": 1300.0}
 
     @property
     def error_threshold(self) -> float:
@@ -96,9 +108,9 @@ class MomentumScenario(BaseScenario):
                 ),
                 EntityConfig(
                     name="Car_B",
-                    mass=1800.0,
-                    width=2.2,
-                    height=5.0,
+                    mass=8000.0,
+                    width=2.5,
+                    height=8.0,
                     start_x=100.0,
                     start_y=50.0,
                     heading_deg=90.0,  # Driving upward toward intersection

@@ -27,7 +27,7 @@ class PropertyStrikeScenario(BaseScenario):
     # These are the final positions when Car_A starts at (20, 100) going
     # at 54 mph with steering = -8 degrees and hits the bus stop at (80, 85).
     _TARGET_DEBRIS = {
-        "Car_A": (137.64, 81.95),
+        "Car_A": (148.07, 81.93),
     }
 
     @property
@@ -40,16 +40,15 @@ class PropertyStrikeScenario(BaseScenario):
 
     @property
     def max_steps(self) -> int:
-        return 15
+        return 20
 
     @property
     def testimony(self) -> str:
         return (
-            "Driver of Car A states: 'I was driving at exactly 30 mph, the posted "
-            "speed limit, when a stray dog ran across the road. I swerved slightly "
-            "to avoid it and lost control, sliding into the bus stop. I was not "
-            "speeding at any point. The road was a bit wet which made me slide further "
-            "than expected.'"
+            "Driver of Car A states: 'I was driving my compact sedan at exactly 30 mph, the posted "
+            "speed limit, when a stray dog ran out. It was a torrential downpour and the roads were "
+            "slick. I swerved to avoid it and slid into the bus stop. "
+            "The front of my car was completely crushed inward, it's totaled.'"
         )
 
     @property
@@ -63,6 +62,18 @@ class PropertyStrikeScenario(BaseScenario):
     @property
     def ground_truth_cause(self) -> str:
         return "Speeding"
+
+    @property
+    def ground_truth_friction(self) -> float:
+        return 0.3  # Wet/slick road
+
+    @property
+    def ground_truth_restitution(self) -> float:
+        return 0.1  # Completely crushed
+
+    @property
+    def ground_truth_masses(self) -> Dict[str, float]:
+        return {"Car_A": 1500.0}  # Compact sedan
 
     @property
     def error_threshold(self) -> float:

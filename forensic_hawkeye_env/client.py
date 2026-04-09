@@ -44,6 +44,15 @@ class ForensicHawkeyeEnv(
 
         if action.sim_parameters is not None:
             payload["sim_parameters"] = action.sim_parameters
+        if action.friction_coefficient is not None:
+            payload["friction_coefficient"] = action.friction_coefficient
+        if action.restitution is not None:
+            payload["restitution"] = action.restitution
+        if action.mass_overrides is not None:
+            payload["mass_overrides"] = action.mass_overrides
+        if action.impact_offset_y is not None:
+            payload["impact_offset_y"] = action.impact_offset_y
+        
         if action.liable_party is not None:
             payload["liable_party"] = action.liable_party
         if action.root_cause is not None:
@@ -65,6 +74,9 @@ class ForensicHawkeyeEnv(
             distance_errors=obs_data.get("distance_errors", {}),
             total_distance_error=obs_data.get("total_distance_error", 999.0),
             human_testimony=obs_data.get("human_testimony", ""),
+            weather_conditions=obs_data.get("weather_conditions", ""),
+            vehicle_descriptions=obs_data.get("vehicle_descriptions", {}),
+            damage_description=obs_data.get("damage_description", ""),
             active_contradiction_flag=obs_data.get("active_contradiction_flag", False),
             step_number=obs_data.get("step_number", 0),
             max_steps=obs_data.get("max_steps", 15),

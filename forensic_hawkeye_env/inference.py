@@ -34,28 +34,43 @@ MODEL_NAME = os.getenv("MODEL_NAME") or "meta-llama/Llama-3.1-8B-Instruct"
 API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
 ENV_URL = os.getenv("ENV_URL") or "http://localhost:8000"
 BENCHMARK = "forensic_hawkeye_env"
-MAX_STEPS = 15
+MAX_STEPS = 35
 TEMPERATURE = 0.1
 MAX_TOKENS = 512
 
 SYSTEM_PROMPT = textwrap.dedent("""\
-    You are an AI Forensic Auditor. Your job is to reconstruct car accidents
-    using a physics simulator and determine liability by disproving false testimony.
+    You are Watson, an elite AI Forensic Auditor and detective. Your job is to reconstruct car accidents
+    using a ruthless, unfeeling physics simulator to find the exact configuration that perfectly
+    matches the target debris, thereby disproving false human testimony.
 
-    You must respond with ONLY a valid JSON object. No markdown, no explanation.
+    You must respond with ONLY a valid JSON object. No markdown, no explanation outside the JSON.
 
-    To run a simulation:
-    {"action_type": "RUN_SIMULATION", "sim_parameters": {"Car_A": {"speed": 45.0, "steering": -5.0}}}
+    To run a simulation (gradient descent thought process):
+    {
+      "action_type": "RUN_SIMULATION",
+      "thought": "Testimony claims rainy road (friction=0.3). Distance error is 12m short. I will increase speed.",
+      "sim_parameters": {"Car_A": {"speed": 45.0, "steering": -5.0}},
+      "friction_coefficient": 0.3,
+      "restitution": 0.5,
+      "mass_overrides": {"Car_A": 1500.0},
+      "impact_offset_y": 0.0
+    }
 
-    To submit your final verdict:
-    {"action_type": "SUBMIT_VERDICT", "liable_party": "Car_A", "root_cause": "Speeding"}
+    To submit your final verdict (after error < threshold):
+    {
+      "action_type": "SUBMIT_VERDICT", 
+      "liable_party": "Car_A", 
+      "root_cause": "Speeding"
+    }
 
     Strategy:
-    1. Start by running a simulation with the testimony values.
-    2. Compare simulated debris to target debris.
-    3. Adjust parameters to minimize distance error.
-    4. When distance error is low, check if testimony contradicts physics.
-    5. Submit your verdict identifying the liable party and root cause.
+    1. Study testimony to extract the Four Pillars:
+       - friction_coefficient (0.15 for ice, 0.3 for rain, 0.8 for dry)
+       - restitution (0.1 for crushed, 0.5 for minor dent)
+       - mass_overrides (1500 sedan, 8000 heavy truck, 75 pedestrian)
+       - impact_offset_y (0.0 unless angular spin needed)
+    2. Adjust 'sim_parameters' iteratively like gradient descent to minimize distance error.
+    3. Once distance error < threshold, submit verdict.
 """)
 
 
@@ -95,6 +110,10 @@ def parse_llm_response(response_text: str) -> ForensicHawkeyeAction:
 
         if action_type == "RUN_SIMULATION":
             action.sim_parameters = data.get("sim_parameters")
+            action.friction_coefficient = data.get("friction_coefficient")
+            action.restitution = data.get("restitution")
+            action.mass_overrides = data.get("mass_overrides")
+            action.impact_offset_y = data.get("impact_offset_y")
         elif action_type == "SUBMIT_VERDICT":
             action.liable_party = data.get("liable_party")
             action.root_cause = data.get("root_cause")
@@ -147,9 +166,9 @@ def get_model_action(client: OpenAI, messages: list, obs) -> str:
 
 # ── Main task runner ──────────────────────────────────────
 def run_task(task_id: int) -> None:
-    if not all([API_BASE_URL, API_KEY, MODEL_NAME]):
-        print("Missing required environment variables (API_BASE_URL, HF_TOKEN, MODEL_NAME)", file=sys.stderr, flush=True)
-        sys.exit(1)
+    global API_KEY, API_BASE_URL, MODEL_NAME
+    if not API_KEY:
+        API_KEY = "dummy"
 
     client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
     rewards: List[float] = []

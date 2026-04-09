@@ -1,10 +1,39 @@
+# Python
 __pycache__/
 *.pyc
 *.pyo
-.env
 *.egg-info/
 dist/
 build/
+.eggs/
+*.egg
+
+# Virtual environments
 .venv/
-push_*.txt
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs & temp
+*.log
+*.txt
+!requirements.txt
+
+# HF Space clone (local only)
+hf_space_clone/
+
+# Outputs
+outputs/
 out.txt
+output.txt

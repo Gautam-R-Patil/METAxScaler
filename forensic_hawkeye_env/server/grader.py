@@ -100,4 +100,9 @@ def compute_final_score(
         # Likely guessed — slight penalty
         accuracy_score *= 0.8
 
-    return round(min(accuracy_score + verdict_score + physics_bonus, 1.0), 3)
+    final_score = accuracy_score + verdict_score + physics_bonus
+    
+    # Bound strictly between 0 and 1 exclusive (not 0.0, not 1.0)
+    final_score = max(0.001, min(final_score, 0.999))
+    
+    return round(final_score, 3)

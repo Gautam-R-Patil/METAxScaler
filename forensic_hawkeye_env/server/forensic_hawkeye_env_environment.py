@@ -40,6 +40,40 @@ from .scenarios import SCENARIOS
 from .scenarios.base import BaseScenario
 
 
+def _extract_hints(testimony: str) -> dict:
+    """Extract structured hints from plain-English testimony for observation fields."""
+    text = testimony.lower()
+
+    # Weather / friction hints
+    weather = "unknown"
+    if any(w in text for w in ["rain", "downpour", "wet", "slick", "slippery"]):
+        weather = "wet/rainy — expect low friction (0.2–0.4)"
+    elif any(w in text for w in ["ice", "icy", "freezing", "frozen", "snow"]):
+        weather = "icy — expect very low friction (0.1–0.2)"
+    elif any(w in text for w in ["dry", "sunny", "clear", "bright"]):
+        weather = "dry/clear — expect high friction (0.7–0.9)"
+
+    # Vehicle type / mass hints
+    vehicles = {}
+    for car_id in ["car_a", "car_b", "car_c"]:
+        display = car_id.replace("_", " ").title()
+        if any(w in text for w in ["truck", "delivery truck", "heavy truck"]) and car_id == "car_b":
+            vehicles[display] = "heavy truck (~6000-10000 kg)"
+        elif any(w in text for w in ["compact", "small car"]) and car_id in text:
+            vehicles[display] = "compact car (~1200-1400 kg)"
+        elif any(w in text for w in ["sedan", "coupe", "mid-size"]):
+            vehicles[display] = "sedan/coupe (~1400-1600 kg)"
+
+    # Damage / restitution hints
+    damage = "unknown"
+    if any(w in text for w in ["crushed", "totaled", "crumpled", "destroyed", "completely"]):
+        damage = "severe crush damage — expect low restitution (0.1–0.2)"
+    elif any(w in text for w in ["minor dent", "scratch", "barely"]):
+        damage = "minor damage — expect higher restitution (0.4–0.6)"
+
+    return {"weather": weather, "vehicles": vehicles, "damage": damage}
+
+
 class ForensicHawkeyeEnvironment(Environment):
     """
     Forensic Accident Reconstruction Environment.
@@ -117,6 +151,9 @@ class ForensicHawkeyeEnvironment(Environment):
         target = self._scenario.target_debris
         target_as_lists = {k: list(v) for k, v in target.items()}
 
+        # Extract structured hints from testimony
+        hints = _extract_hints(self._scenario.testimony)
+
         return ForensicHawkeyeObservation(
             done=False,
             reward=0.0,
@@ -127,6 +164,9 @@ class ForensicHawkeyeEnvironment(Environment):
             distance_errors={},
             total_distance_error=999.0,
             human_testimony=self._scenario.testimony,
+            weather_conditions=hints["weather"],
+            vehicle_descriptions=hints["vehicles"],
+            damage_description=hints["damage"],
             active_contradiction_flag=False,
             step_number=0,
             max_steps=self._scenario.max_steps,
@@ -336,6 +376,8 @@ class ForensicHawkeyeEnvironment(Environment):
         target_as_lists = {k: list(v) for k, v in scenario.target_debris.items()}
         sim_as_lists = {k: list(v) for k, v in self._simulated_debris.items()}
 
+        hints = _extract_hints(scenario.testimony)
+
         return ForensicHawkeyeObservation(
             done=False,
             reward=reward,
@@ -346,6 +388,9 @@ class ForensicHawkeyeEnvironment(Environment):
             distance_errors=self._distance_errors,
             total_distance_error=self._total_error,
             human_testimony=scenario.testimony,
+            weather_conditions=hints["weather"],
+            vehicle_descriptions=hints["vehicles"],
+            damage_description=hints["damage"],
             active_contradiction_flag=self._contradiction_flag,
             step_number=self._state.step_count,
             max_steps=scenario.max_steps,
@@ -362,6 +407,8 @@ class ForensicHawkeyeEnvironment(Environment):
         target_as_lists = {k: list(v) for k, v in scenario.target_debris.items()}
         sim_as_lists = {k: list(v) for k, v in self._simulated_debris.items()}
 
+        hints = _extract_hints(scenario.testimony)
+
         return ForensicHawkeyeObservation(
             done=True,
             reward=score,  # Final observation uses the grader score as reward
@@ -372,6 +419,9 @@ class ForensicHawkeyeEnvironment(Environment):
             distance_errors=self._distance_errors,
             total_distance_error=self._best_total_error,
             human_testimony=scenario.testimony,
+            weather_conditions=hints["weather"],
+            vehicle_descriptions=hints["vehicles"],
+            damage_description=hints["damage"],
             active_contradiction_flag=self._contradiction_flag,
             step_number=self._state.step_count,
             max_steps=scenario.max_steps,

@@ -26,13 +26,28 @@ The agent sends a `ForensicHawkeyeAction` (Pydantic model) with one of two actio
 | Field | Type | Description |
 |-------|------|-------------|
 | `action_type` | `"RUN_SIMULATION"` or `"SUBMIT_VERDICT"` | Which action to perform |
+| `thought` | `str` (optional) | Agent's internal reasoning chain |
 | `sim_parameters` | `Dict[str, Dict[str, float]]` | Per-entity physics parameters (for `RUN_SIMULATION`) |
+| `friction_coefficient` | `float` (optional) | Global surface friction (0.15=ice, 0.3=rain, 0.8=dry) |
+| `restitution` | `float` (optional) | Collision elasticity (0.1=crushed, 0.5=minor dent) |
+| `mass_overrides` | `Dict[str, float]` (optional) | Custom mass per entity in kg |
+| `impact_offset_y` | `float` (optional) | Y-axis collision offset for angular momentum |
 | `liable_party` | `str` | The entity at fault (for `SUBMIT_VERDICT`) |
 | `root_cause` | `str` | Why the accident happened (for `SUBMIT_VERDICT`) |
 
-**Example simulation action:**
+The agent extracts hidden physics variables from plain-English testimony (weather → friction, damage → restitution, vehicle type → mass) and iteratively tunes all parameters to match target debris.
+
+**Example simulation action (neuro-symbolic):**
 ```json
-{"action_type": "RUN_SIMULATION", "sim_parameters": {"Car_A": {"speed": 54.0, "steering": -8.0}}}
+{
+  "action_type": "RUN_SIMULATION",
+  "thought": "Testimony says torrential downpour (friction ~0.3) and compact sedan (mass ~1500). Error is 12m, increasing speed.",
+  "sim_parameters": {"Car_A": {"speed": 54.0, "steering": -8.0}},
+  "friction_coefficient": 0.3,
+  "restitution": 0.1,
+  "mass_overrides": {"Car_A": 1500.0},
+  "impact_offset_y": 0.0
+}
 ```
 
 **Example verdict action:**

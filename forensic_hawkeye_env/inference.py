@@ -29,10 +29,10 @@ from forensic_hawkeye_env.client import ForensicHawkeyeEnv
 from forensic_hawkeye_env.models import ForensicHawkeyeAction
 
 # ── Configuration ─────────────────────────────────────────
-API_BASE_URL = os.getenv("API_BASE_URL") or "https://api-inference.huggingface.co/v1"
-MODEL_NAME = os.getenv("MODEL_NAME") or "meta-llama/Llama-3.1-8B-Instruct"
-API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
-ENV_URL = os.getenv("ENV_URL") or "http://localhost:8000"
+API_BASE_URL = os.getenv("API_BASE_URL", "https://api-inference.huggingface.co/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "meta-llama/Llama-3.1-8B-Instruct")
+HF_TOKEN = os.getenv("HF_TOKEN")
+ENV_URL = os.getenv("ENV_URL", "http://localhost:8000")
 BENCHMARK = "forensic_hawkeye_env"
 MAX_STEPS = 35
 TEMPERATURE = 0.1
@@ -166,11 +166,11 @@ def get_model_action(client: OpenAI, messages: list, obs) -> str:
 
 # ── Main task runner ──────────────────────────────────────
 def run_task(task_id: int) -> None:
-    global API_KEY, API_BASE_URL, MODEL_NAME
-    if not API_KEY:
-        API_KEY = "dummy"
+    global HF_TOKEN, API_BASE_URL, MODEL_NAME
+    if not HF_TOKEN:
+        HF_TOKEN = "dummy"
 
-    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+    client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
     rewards: List[float] = []
     steps_taken = 0
     score = 0.0

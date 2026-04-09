@@ -216,6 +216,8 @@ def run_task(task_id: int) -> None:
                 log_step(step=step, action="ERROR", reward=0.0, done=done, error=str(e))
                 break
 
+        # Strictly bound score to (0.0, 1.0) exclusive for hackathon check
+        score = max(0.001, min(score, 0.999))
         success = score > 0.5
 
         # [END] log

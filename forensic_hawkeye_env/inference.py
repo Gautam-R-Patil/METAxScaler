@@ -29,10 +29,10 @@ from forensic_hawkeye_env.client import ForensicHawkeyeEnv
 from forensic_hawkeye_env.models import ForensicHawkeyeAction
 
 # ── Configuration ─────────────────────────────────────────
-API_BASE_URL = os.getenv("API_BASE_URL") or os.getenv("OPENAI_API_BASE")
-MODEL_NAME = os.getenv("MODEL_NAME") or os.getenv("OPENAI_MODEL_NAME") or "gpt-4-turbo"
-API_KEY = os.getenv("HF_TOKEN") or os.getenv("OPENAI_API_KEY")
-ENV_URL = os.getenv("ENV_URL", "http://localhost:8000")
+API_BASE_URL = os.getenv("API_BASE_URL") or "https://api-inference.huggingface.co/v1"
+MODEL_NAME = os.getenv("MODEL_NAME") or "meta-llama/Llama-3.1-8B-Instruct"
+API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
+ENV_URL = os.getenv("ENV_URL") or "http://localhost:8000"
 BENCHMARK = "forensic_hawkeye_env"
 MAX_STEPS = 15
 TEMPERATURE = 0.1
@@ -75,7 +75,7 @@ def log_step(step: int, action: str, reward: float, done: bool, error: Optional[
 
 def log_end(success: bool, steps: int, score: float, rewards: List[float]) -> None:
     rewards_str = ",".join(f"{r:.2f}" for r in rewards)
-    print(f"[END] success={str(success).lower()} steps={steps} score={score:.3f} rewards={rewards_str}", flush=True)
+    print(f"[END] success={str(success).lower()} steps={steps} score={score:.2f} rewards={rewards_str}", flush=True)
 
 
 # ── Action parsing ────────────────────────────────────────
@@ -147,16 +147,11 @@ def get_model_action(client: OpenAI, messages: list, obs) -> str:
 
 # ── Main task runner ──────────────────────────────────────
 def run_task(task_id: int) -> None:
-    if not API_KEY:
-        print("[DEBUG] Warning: OPENAI_API_KEY / HF_TOKEN is not set in the environment.", flush=True)
+    if not all([API_BASE_URL, API_KEY, MODEL_NAME]):
+        print("Missing required environment variables (API_BASE_URL, HF_TOKEN, MODEL_NAME)", file=sys.stderr, flush=True)
+        sys.exit(1)
 
-    client_kwargs = {}
-    if API_KEY:
-        client_kwargs["api_key"] = API_KEY
-    if API_BASE_URL:
-        client_kwargs["base_url"] = API_BASE_URL
-
-    client = OpenAI(**client_kwargs)
+    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
     rewards: List[float] = []
     steps_taken = 0
     score = 0.0
@@ -168,7 +163,7 @@ def run_task(task_id: int) -> None:
         obs = result.observation
 
         # [START] log
-        task_name = obs.task_name or f"task_{task_id}"
+        task_name = f"task_{task_id}"
         log_start(task=task_name, env=BENCHMARK, model=MODEL_NAME)
 
         messages = [{"role": "system", "content": SYSTEM_PROMPT}]
